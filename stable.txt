@@ -1,0 +1,75 @@
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+import pyttsx3
+import threading
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+current_engine = None
+engine_lock = threading.Lock()
+
+
+def speak_text(text):
+    global current_engine
+
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 170)
+    engine.setProperty("volume", 1.0)
+
+    with engine_lock:
+        current_engine = engine
+
+    engine.say(text)
+
+    try:
+        engine.runAndWait()
+    except:
+        pass
+
+    with engine_lock:
+        if current_engine == engine:
+            current_engine = None
+
+
+@app.post("/read")
+async def read_text(req: Request):
+    global current_engine
+
+    data = await req.json()
+    text = data.get("text", "").strip()
+    if not text:
+        return {"status": "no text"}
+    
+    with engine_lock:
+        if current_engine:
+            try:
+                current_engine.stop()
+            except:
+                pass
+            current_engine = None
+
+    threading.Thread(target=speak_text, args=(text,), daemon=True).start()
+
+    return {"status": "reading"}
+
+
+@app.post("/stop")
+async def stop_reading():
+    global current_engine
+
+    with engine_lock:
+        if current_engine:
+            try:
+                current_engine.stop()
+            except:
+                pass
+            current_engine = None
+
+    return {"status": "stopped"}
