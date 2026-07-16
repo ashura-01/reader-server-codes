@@ -11,7 +11,7 @@ if not text.strip():
 
 async def stream_neural_audio():
     # Choose a highly realistic, fluid human voice
-    communicate = edge_tts.Communicate(text, "en-US-ChristopherNeural")
+    communicate = edge_tts.Communicate(text, "en-IE-EmilyNeural")
     
     # Spawn mpv (native on Arch) to read the stream directly from standard input (fd://0)
     # This plays the speech straight through PipeWire or PulseAudio without creating files.
